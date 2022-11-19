@@ -1,0 +1,132 @@
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#                                                                             #
+#          .----.   @   @                    _ _   www.github.com/snailware   #
+#         / .-"-.`.  \v/     ___ _ __   __ _(_) |_      ____ _ _ __ ___       #
+#         | | '\ \ \_/ )    / __| '_ \ / _` | | \ \ /\ / / _` | '__/ _ \      #
+#       ,-\ `-.' /.'  /     \__ \ | | | (_| | | |\ V  V / (_| | | |  __/      #
+#      '---`----'----'      |___/_| |_|\__,_|_|_| \_/\_/ \__,_|_|  \___|      #
+#                                                                             #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#                                      #                                      #
+#            MM / DD / 20YY            #            PROJECT TITLE             #
+#                                      #                                      #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#                                                                             #
+#   DESCRIPTION DESCRIPTION DESCRIPTION DESCRIPTION DESCRIPTION DESCRIPTION   #
+#   DESCRIPTION DESCRIPTION DESCRIPTION DESCRIPTION DESCRIPTION DESCRIPTION   #
+#                                                                             #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+substitutions:
+  device_name: 
+
+esphome:
+  name: ${device_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+button:
+
+  # restart button
+  - platform: restart
+    name: "Restart Device"
+
+  # shutdown button
+  - platform: shutdown
+    name: "Shutdown Device"
+
+  # safe mode restart button
+  - platform: safe_mode
+    name: "Restart Device (Safe Mode)"
+
+  # factory reset button
+  - platform: factory_reset
+    name: "Factory Reset Device"
+
+# Enable status LED using onboard led
+status_led:
+  pin: GPIO2
+
+text_sensor:
+
+  # uptime display
+  - platform: template
+    name: "Uptime"
+    id: uptime_human_readable
+    icon: mdi:clock-start
+
+  # wifi info display
+  - platform: wifi_info
+    ssid:
+      name: "SSID"
+    ip_address:
+      name: "IP Address"
+    mac_address:
+      name: "Mac Address"
+
+sensor: 
+
+  # uptime sensor
+  - platform: uptime
+    name: "Uptime Sensor"
+    id: uptime_sensor
+    update_interval: 60s
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: uptime_human_readable
+            state: !lambda |-
+              int seconds = round(id(uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds / 60;
+              return (
+                (days ? to_string(days) + "d " : "") +
+                (hours ? to_string(hours) + "h " : "") +
+                (minutes ? to_string(minutes) + "m" : "")
+              ).c_str();
+
+  # wifi signal strength sensor
+  - platform: wifi_signal
+    name: "Wifi Signal Strength"
+    update_interval: 60s
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+# Enable Over The Air programming
+ota:
+
+# Enable wifi
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  
+  # if wifi connection is unstable, uncomment next line to prevent wifi module from operating in power saver mode. 
+  #power_save_mode: none
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: ${device_name}
+    password: !secret wifi_password
+
+# Enable fallback hotspot
+captive_portal:
+
+# Enable web server
+# !WARNING! this can use ALOT of memory & cause problems. 
+# uncomment the following lines to use it anyway.
+#web_server:
+#  port: 80
+#  local: true
+#  auth:
+#    username: ${device_name}
+#    password: !secret wifi_password    
